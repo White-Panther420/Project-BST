@@ -51,7 +51,7 @@ class Tree{
                 if(currentNode.left !== null){
                     parentNode = currentNode
                     currentNode = currentNode.left
-                    this.deleteNode(keyToDelete, parentNode, currentNode)
+                    return this.deleteNode(keyToDelete, parentNode, currentNode)
                 }
 
             }else if(keyToDelete > currentNode.data){
@@ -59,7 +59,7 @@ class Tree{
                 if(currentNode.right !== null){
                     parentNode = currentNode
                     currentNode = currentNode.right
-                    this.deleteNode(keyToDelete, parentNode, currentNode)
+                    return this.deleteNode(keyToDelete, parentNode, currentNode)
                 }
             }
             // We found the node to delete
@@ -73,26 +73,130 @@ class Tree{
                         parentNode.left = null
                     }
                 // CASE 2: Deleting from a leaf node with one child
-                }else if(currentNode.left === null || currentNode.right === null){
-                    // CASE 2.1: Deleting node with only one descendaant on one side
-                    if(currentNode.left === null && currentNode.right.right === null){
-                        parentNode.right = currentNode.right
-                    }else if(currentNode.right === null && currentNode.left.left === null){
-                        parentNode.left = currentNode.left
-                    }else{ // We know current node has multiple descendants on one side
-                        // CASE 2.2: Deleting a node with only one child that has multiple descendants
-                        // on one or both sides 
-                        if(currentNode.left === null){
-                            // Cut link to currentNode and set parentNode to right child of currentNode
-                            // This works because BST Property states that all right descendants of currentNode
-                            // Will be less than parentNode and vice versa with right side being null
-                            parentNode.left = currentNode.right
-                        }else if(currentNode.right === null){
-                            parentNode.right = currentNode.left
+                }else if (currentNode.left === null || currentNode.right === null) {
+                    // Assign tempNode to whichever one is not null
+                    let tempNode = currentNode.left || currentNode.right;
+                    if (currentNode.data > parentNode.data) {
+                        // According to BST Property, tempnode and its descendants will be > than parentNode
+                        parentNode.right = tempNode;
+                    } else {
+                        parentNode.left = tempNode;
+                    }
+                    currentNode = null
+                // CASE 3: Deleting a node that has both children
+                }else{
+                    let tempNode = currentNode.right
+                    let prevNode = currentNode.right
+                    tempNode = tempNode.left
+                    // Using Successor BST property, we find the smallest node that is bigger
+                    // than currentNode by going all the way to the left of currentNode.right
+                    while(tempNode.left !== null){
+                        tempNode = tempNode.left
+                        prevNode = prevNode.left
+                    }
+                    // CASE 3.1: Replacing currentNode with a node that has no children
+                    if(tempNode.left === null && tempNode.right == null){
+                        // Delete left child (tempNode) to avoid infinite recursion
+                        prevNode.left = null 
+
+                        //Copying ptrs so we don't lose them
+                        tempNode.left = currentNode.left
+                        tempNode.right = currentNode.right
+                        
+                        if(currentNode.data > parentNode.data){
+                            parentNode.right = tempNode
+                        }else{
+                            parentNode.left = tempNode
                         }
+                        currentNode = null
                     }
                 }
+            }else{
+                console.log(`ERROR! Node with key of ${keyToDelete} does not exist`)
             }
+        }
+    }
+    findNode(key, root){
+        if(root === null){
+            console.log("ERROR! Node not found. Tree is empty")
+        }else{
+            // Recursivelly search for node
+            if(key < root.data){
+                if(root.left !== null)
+                    return this.findNode(key, root.left)
+            }else if(key > root.data){
+                if(root.right !== null)
+                    return this.findNode(key, root.right)
+            }
+            if(key === root.data){
+                console.log(`The key ${key} was found!`)
+                return;
+            }else[
+                console.log(`Error! Key ${key} does not exist in tree`)
+            ]
+        }
+    }
+    levelOrder(root){
+        if(root === null){
+            console.log("Tree is empty")
+        }else{
+            let queue = []
+            queue.push(root) //Enqueue unvisited root enode
+            // While there is at least one discovered node
+            while(queue.length > 0){
+                root = queue[0]
+                if(root.left !== null){
+                    queue.push(root.left)
+                }
+                if(root.right !== null){
+                    queue.push(root.right)
+                }
+                queue.splice(0,1)
+                console.log(root.data)
+            }
+        }
+    }
+    inOrder(root){
+        //Travel <left><root><right>
+        if(root === null){
+            console.log("The tree is empty")
+        }else{
+            if(root.left !== null){
+                this.inOrder(root.left)
+            }
+            console.log(root.data)
+            if(root.right !== null){
+                this.inOrder(root.right)
+            }
+        }
+    }
+    preOrder(root){
+        //Travel <root><left><right>
+        if(root === null){
+            console.log("The tree is empty")
+        }else{
+            console.log(root.data)
+            if(root.left !== null){
+                this.preOrder(root.left)
+            }
+            if(root.right !== null){
+                this.preOrder(root.right)
+            }
+        }
+    }
+    
+    postOrder(root){
+        //Travel <left><right><root>
+        if(root === null){
+            console.log("The tree is empty")
+        }else{
+            if(root.left !== null){
+                this.postOrder(root.left)
+            }
+            if(root.right !== null){
+                this.postOrder(root.right)
+            }
+            console.log(root.data)
         }
     }
     prettyPrint = (node, prefix = "", isLeft = true) => {
@@ -194,11 +298,33 @@ console.log("PRINTING INSERRT OPERATION. . . ")
 newBST.prettyPrint(newBST.root)
 
 /********** DELETING LEAF NODES FROM TREE **********/
-// newBST.deleteNode(6, null, newBST.root)
-// newBST.deleteNode(0, null, newBST.root)
-// newBST.deleteNode(2, null, newBST.root)
-// newBST.deleteNode(5, null, newBST.root)
-// newBST.deleteNode(11, null, newBST.root)
+newBST.deleteNode(6, null, newBST.root)
+newBST.deleteNode(0, null, newBST.root)
+newBST.deleteNode(5, null, newBST.root)
+newBST.deleteNode(8, null, newBST.root)
+newBST.deleteNode(7, null, newBST.root)
+newBST.deleteNode(15, null, newBST.root)
 console.log("PRINTING DELETE LEAF OPERATION. . . ")
 newBST.prettyPrint(newBST.root)
 
+
+/********** SEARCHING FOR NODE KEY IN TREE **********/
+newBST.findNode(3, newBST.root)
+newBST.findNode(9, newBST.root)
+newBST.findNode(10, newBST.root)
+newBST.findNode(15, newBST.root)
+let newNode7 = new TNode(15)
+newBST.insertNode(newNode7, newBST.root)
+newBST.findNode(15, newBST.root)
+console.log("PRINTING UPDATED TREE AFTER INSERTING 15")
+newBST.prettyPrint(newBST.root)
+
+/********** TRAVERSING TREE **********/
+console.log("PRINTING LEVEL ORDER BFS TRAVERSAL")
+newBST.levelOrder(newBST.root)
+console.log("PRINTING IN-ODRDER TRAVERSAL")
+newBST.inOrder(newBST.root)
+console.log("PRINTING PRE-ODRDER TRAVERSAL")
+newBST.preOrder(newBST.root)
+console.log("PRINTING POST-ODRDER TRAVERSAL")
+newBST.postOrder(newBST.root)
