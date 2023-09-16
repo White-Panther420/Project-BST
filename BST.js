@@ -1,5 +1,5 @@
 class Tree{
-    constructor(arrayData){
+    constructor(arrayData = []){
         this.root = this.buildTree(arrayData, 0 ,arrayData.length-1)
     }
 
@@ -67,49 +67,44 @@ class Tree{
                 // CASE 1: Deleting a leaf node with no children
                 if(currentNode.left === null && currentNode.right === null){
                     // Check which side of parent root node is on and delete accordinglly
-                    if(currentNode.data > parentNode.data){
-                        parentNode.right = null
-                    }else{
-                        parentNode.left = null
-                    }
+                        if(this.root === currentNode){  // Deleing top root which is only node
+                            this.root = null
+                        }
+                        else if(currentNode.data > parentNode.data){
+                            parentNode.right = null
+                        }else if(currentNode.data < parentNode.data){
+                            parentNode.left = null
+                        }
                 // CASE 2: Deleting from a leaf node with one child
                 }else if (currentNode.left === null || currentNode.right === null) {
                     // Assign tempNode to whichever one is not null
                     let tempNode = currentNode.left || currentNode.right;
-                    if (currentNode.data > parentNode.data) {
+                    if(this.root === currentNode){
+                        this.root = tempNode
+                    }
+                    else if (currentNode.data > parentNode.data) {
                         // According to BST Property, tempnode and its descendants will be > than parentNode
                         parentNode.right = tempNode;
-                    } else {
+                    } else if(currentNode.data < parentNode.data){
                         parentNode.left = tempNode;
                     }
                     currentNode = null
                 // CASE 3: Deleting a node that has both children
                 }else{
                     let tempNode = currentNode.right
-                    let prevNode = currentNode.right
-                    tempNode = tempNode.left
+                    let prevNode = currentNode
+
                     // Using Successor BST property, we find the smallest node that is bigger
                     // than currentNode by going all the way to the left of currentNode.right
-                    while(tempNode.left !== null){
+                    while(tempNode.left !== null){                        prevNode = prevNode.left
+                        prevNode = tempNode
                         tempNode = tempNode.left
-                        prevNode = prevNode.left
                     }
-                    // CASE 3.1: Replacing currentNode with a node that has no children
-                    if(tempNode.left === null && tempNode.right == null){
-                        // Delete left child (tempNode) to avoid infinite recursion
-                        prevNode.left = null 
+                    
+                    // Now that we found successor node, problem is reduced to case 1 or 2
+                    this.deleteNode(tempNode.data, prevNode, tempNode)
+                    currentNode.data = tempNode.data  // "delete" currentNode
 
-                        //Copying ptrs so we don't lose them
-                        tempNode.left = currentNode.left
-                        tempNode.right = currentNode.right
-                        
-                        if(currentNode.data > parentNode.data){
-                            parentNode.right = tempNode
-                        }else{
-                            parentNode.left = tempNode
-                        }
-                        currentNode = null
-                    }
                 }
             }else{
                 console.log(`ERROR! Node with key of ${keyToDelete} does not exist`)
@@ -184,7 +179,6 @@ class Tree{
             }
         }
     }
-    
     postOrder(root){
         //Travel <left><right><root>
         if(root === null){
@@ -198,6 +192,79 @@ class Tree{
             }
             console.log(root.data)
         }
+    }
+    findNodeHeight(root){
+        // Base case: We have reached a leaf node
+        if(root === null){
+            return -1  // Balance out null edge that was counted
+        }else{
+            // Recursivelly sink to bottom of tree, tracking edge count with each call
+            let leftHeight = this.findNodeHeight(root.left) 
+            let rightHeight = this.findNodeHeight(root.right) 
+            if(leftHeight > rightHeight){
+                return leftHeight + 1
+            } else{
+                return rightHeight + 1
+            }
+        }
+    }
+    findNodeDepth(root, node){
+        if(root === null){
+            return -1
+        }
+        // Base case: We have reached the node whose depth we want to find
+        else if(root.data === node.data){
+            return 0  
+        }else{
+            // Recursivelly sink to the node passed in tracking edge count with each call
+            let leftDepth = this.findNodeDepth(root.left, node)
+            if (leftDepth !== -1) {
+                return leftDepth + 1; // Node found in the left subtree
+            }
+            let rightDepth = this.findNodeDepth(root.right, node) 
+            if (rightDepth !== -1) {
+                return rightDepth + 1; // Node found in the left subtree
+            }
+
+            return -1; // Node not found in both subtrees
+        }
+    }
+    isBalanced(root){
+        let rootHeight = this.findNodeHeight(root)
+        if(rootHeight === 0){
+            console.log("Tree is balanced!")
+        }else{
+            let leftSubTreeHeight = this.findNodeHeight(root.left) 
+            let rightSubTreeHeight = this.findNodeHeight(root.right) 
+            let leftRightHeightDifference = leftSubTreeHeight - rightSubTreeHeight
+            if(leftRightHeightDifference !== 1 && leftRightHeightDifference !== -1){
+                console.log(`Tree is not balanced! Left subtree height: ${leftSubTreeHeight}, Right subtree height: ${rightSubTreeHeight}`)
+            }else{
+                console.log("Tree is balanced!")
+            }
+        }
+    }
+    rebalanceTree(root){
+        // Array will contain sorted node data to build new balanced tree
+        let newNodesDataArray = []
+        newNodesDataArray = this.storeNodes(root, newNodesDataArray)
+        console.log(newNodesDataArray)
+        this.root = this.buildTree(newNodesDataArray, 0, newNodesDataArray.length-1)
+    }
+    // Helper function that stores node in Inorder so we can rebuild new tree with sorted array
+    storeNodes(root, arrayOfTreeNodes){
+        if(root === null){
+            console.log("Cannot rebalance. Tree is empty!")
+        }else{
+            if(root.left !== null){
+                this.storeNodes(root.left, arrayOfTreeNodes)
+            }
+            arrayOfTreeNodes.push(root.data)
+            if(root.right !==null){
+                this.storeNodes(root.right, arrayOfTreeNodes)
+            }
+        }
+        return arrayOfTreeNodes
     }
     prettyPrint = (node, prefix = "", isLeft = true) => {
         if (node === null) {
@@ -298,15 +365,56 @@ console.log("PRINTING INSERRT OPERATION. . . ")
 newBST.prettyPrint(newBST.root)
 
 /********** DELETING LEAF NODES FROM TREE **********/
+// Case 1
 newBST.deleteNode(6, null, newBST.root)
 newBST.deleteNode(0, null, newBST.root)
 newBST.deleteNode(5, null, newBST.root)
+
+// Case 2
 newBST.deleteNode(8, null, newBST.root)
+newBST.deleteNode(1, null, newBST.root)
+
+// Case 3
 newBST.deleteNode(7, null, newBST.root)
-newBST.deleteNode(15, null, newBST.root)
+newBST.deleteNode(10, null, newBST.root)
+
+// Case where we only have root 
+const newBSTOnlyRoot = new Tree()
+let newNode50 = new TNode(50)
+newBSTOnlyRoot.insertNode(newNode50, null)
+newBSTOnlyRoot.deleteNode(50, null, newBSTOnlyRoot.root)
+console.log("PRINTING DELETE LEAF OPERATION. . . ")
+newBSTOnlyRoot.prettyPrint(newBSTOnlyRoot.root)
+
+
 console.log("PRINTING DELETE LEAF OPERATION. . . ")
 newBST.prettyPrint(newBST.root)
 
+console.log("CREATING SECOND BST TO TEST DELETE OPERATION")
+const newBST2 = new Tree()
+// Create new nodes with the specified values
+let myNewNode1 = new TNode(50);
+let myNewNode2 = new TNode(40);
+let myNewNode3 = new TNode(100);
+let myNewNode4 = new TNode(60);
+let myNewNode5 = new TNode(70);
+let myNewNode6 = new TNode(80);
+let myNewNode7 = new TNode(55);
+// Insert the nodes into the BST using the insertNode function
+newBST2.insertNode(myNewNode1, newBST2.root);
+newBST2.insertNode(myNewNode2, newBST2.root);
+newBST2.insertNode(myNewNode3, newBST2.root);
+newBST2.insertNode(myNewNode4, newBST2.root);
+newBST2.insertNode(myNewNode5, newBST2.root);
+newBST2.insertNode(myNewNode6, newBST2.root);
+newBST2.insertNode(myNewNode7, newBST2.root);
+newBST2.prettyPrint(newBST2.root)
+
+newBST2.deleteNode(50, null, newBST2.root)
+newBST2.deleteNode(100, null, newBST2.root)
+
+console.log("DELETING 50")
+newBST2.prettyPrint(newBST2.root)
 
 /********** SEARCHING FOR NODE KEY IN TREE **********/
 newBST.findNode(3, newBST.root)
@@ -328,3 +436,84 @@ console.log("PRINTING PRE-ODRDER TRAVERSAL")
 newBST.preOrder(newBST.root)
 console.log("PRINTING POST-ODRDER TRAVERSAL")
 newBST.postOrder(newBST.root)
+
+/********** FINDING NODE HEIGHT **********/
+let height = newBST.findNodeHeight(newBST.root)
+console.log("Height: " + height)
+height = newBST.findNodeHeight(newBST.root.left)
+console.log("Height: " + height)
+height = newBST.findNodeHeight(newBST.root.right)
+console.log("Height: " + height)
+
+/********** FINDING NODE DEPTH **********/
+let depth = newBST.findNodeDepth(newBST.root, newNode7)
+console.log("depth: " + depth)
+depth = newBST.findNodeDepth(newBST.root, newBST.root.left)
+console.log("depth: " + depth)
+depth = newBST.findNodeDepth(newBST.root, newBST.root.right)
+console.log("depth: " + depth)
+depth = newBST.findNodeDepth(newBST.root, newBST.root)
+console.log("depth: " + depth)
+
+/********** CHECKING IF TREE IS BALANCED **********/
+console.log("PRINTING NEWBST. . . ")
+newBST.prettyPrint(newBST.root)
+newBST.isBalanced(newBST.root)
+
+console.log("PRINTING NEWBST2. . . ")
+newBST2.prettyPrint(newBST2.root)
+newBST2.isBalanced(newBST2.root)
+
+/********** REBALANCING TREE **********/
+newBST2.rebalanceTree(newBST2.root)
+console.log("PRINTING NEWBST2. . . ")
+newBST2.prettyPrint(newBST2.root)
+
+/********** FINAL TEST FROM ODIN FOR BALANCE AND REBALANCE **********/
+let testNode1 = new TNode(10);
+let testNode2 = new TNode(9);
+let testNode3 = new TNode(8);
+let testNode4 = new TNode(7);
+let testNode5 = new TNode(6);
+let testNode6 = new TNode(5);
+let testNode7 = new TNode(4);
+let testNode8 = new TNode(3);
+let testNode9 = new TNode(2);
+let testNode10 = new TNode(1);
+
+const testBST = new Tree()
+
+testBST.insertNode(testNode1, testBST.root);
+testBST.insertNode(testNode2, testBST.root);
+testBST.insertNode(testNode3, testBST.root);
+testBST.insertNode(testNode4, testBST.root);
+testBST.insertNode(testNode5, testBST.root);
+testBST.insertNode(testNode6, testBST.root);
+testBST.insertNode(testNode7, testBST.root);
+testBST.insertNode(testNode8, testBST.root);
+testBST.insertNode(testNode9, testBST.root);
+testBST.insertNode(testNode10, testBST.root);
+
+console.log("PRINTING TESTBST. . . ")
+testBST.prettyPrint(testBST.root)
+testBST.isBalanced(testBST.root)
+console.log("TestBST level order")
+testBST.levelOrder(testBST.root)
+console.log("TestBST pre order")
+testBST.preOrder(testBST.root)
+console.log("TestBST in order")
+testBST.inOrder(testBST.root)
+console.log("TestBST post order")
+testBST.postOrder(testBST.root)
+
+testBST.rebalanceTree(testBST.root)
+console.log("PRINTING TESTBST. . . ")
+testBST.prettyPrint(testBST.root)
+console.log("TestBST level order")
+testBST.levelOrder(testBST.root)
+console.log("TestBST pre order")
+testBST.preOrder(testBST.root)
+console.log("TestBST in order")
+testBST.inOrder(testBST.root)
+console.log("TestBST post order")
+testBST.postOrder(testBST.root)
